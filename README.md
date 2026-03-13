@@ -6,6 +6,23 @@ Custom [vcpkg](https://github.com/microsoft/vcpkg) ports, triplets, and installa
 
 Overrides and additions to the official vcpkg registry. 
 
+### Versioning
+
+When updating a port's version:
+
+1. Update `ports/<name>/vcpkg.json` with the new `version` (and reset or increment `port-version`)
+2. Update `versions/baseline.json` to reflect the new baseline version
+3. Update `versions/<first-letter>-/<portname>.json` with a new entry including the `git-tree` hash
+4. Update `tools/vcpkg/vcpkg-configuration.json` in the Windscribe desktop app repo to reflect the new baseline version
+5. Update `vcpkg-configuration.json` in the Windscribe wsnet repo to reflect the new baseline version
+
+The `git-tree` hash is the SHA of the `ports/<name>/` directory tree object in git:
+```bash
+git rev-parse HEAD:ports/<name>
+```
+
+Increment `port-version` (without changing `version`) when the port behavior changes but the upstream version does not (e.g., patch changes, portfile fixes).
+
 ## Triplets
 
 Custom triplets in the `triplets/` directory. All build **release-only** to reduce build times.
