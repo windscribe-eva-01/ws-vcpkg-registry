@@ -1,9 +1,9 @@
 diff --git a/Configurations/unix-Makefile.tmpl b/Configurations/unix-Makefile.tmpl
-index 65c21ef..412a4a8 100644
+index 6c5402d..fc982df 100644
 --- a/Configurations/unix-Makefile.tmpl
 +++ b/Configurations/unix-Makefile.tmpl
-@@ -843,7 +843,7 @@ _install_modules_deps: install_runtime_libs build_modules
- 
+@@ -823,7 +823,7 @@ _install_modules_deps: install_runtime_libs build_modules
+
  install_engines: _install_modules_deps
  	@[ -n "$(INSTALLTOP)" ] || (echo INSTALLTOP should not be empty; exit 1)
 -	@$(PERL) $(SRCDIR)/util/mkdir-p.pl "$(DESTDIR)$(ENGINESDIR)/"
@@ -11,8 +11,8 @@ index 65c21ef..412a4a8 100644
  	@$(ECHO) "*** Installing engines"
  	@set -e; for e in dummy $(INSTALL_ENGINES); do \
  		if [ "$$e" = "dummy" ]; then continue; fi; \
-@@ -867,7 +867,7 @@ uninstall_engines:
- 
+@@ -847,7 +847,7 @@ uninstall_engines:
+
  install_modules: _install_modules_deps
  	@[ -n "$(INSTALLTOP)" ] || (echo INSTALLTOP should not be empty; exit 1)
 -	@$(PERL) $(SRCDIR)/util/mkdir-p.pl "$(DESTDIR)$(MODULESDIR)/"
