@@ -26,7 +26,7 @@ function(qt_download_submodule_impl)
         # qtinterfaceframework is not available in the release, so we fall back to a `git clone`.
         vcpkg_from_git(
             OUT_SOURCE_PATH SOURCE_PATH
-            URL "https://code.qt.io/qt/${_qarg_SUBMODULE}.git"
+            URL "${${_qarg_SUBMODULE}_URL}"
             REF "${${_qarg_SUBMODULE}_REF}"
             PATCHES ${_qarg_PATCHES}
         )
@@ -70,10 +70,9 @@ function(qt_download_submodule_impl)
             set(sha512 SHA512 "${${_qarg_SUBMODULE}_HASH}")
         endif()
 
-        qt_get_url_filename("${_qarg_SUBMODULE}" urls filename)
         vcpkg_download_distfile(archive
-            URLS ${urls}
-            FILENAME "${filename}"
+            URLS ${${_qarg_SUBMODULE}_URL}
+            FILENAME ${${_qarg_SUBMODULE}_FILENAME}
             ${sha512}
         )
         vcpkg_extract_source_archive(
@@ -177,6 +176,7 @@ function(qt_cmake_configure)
             -DINSTALL_PLUGINSDIR:STRING=${qt_plugindir}
             -DINSTALL_QMLDIR:STRING=${qt_qmldir}
             ${_qarg_OPTIONS}
+            "-DQT_TOOLCHAIN_RELOCATABLE_INSTALL_PREFIX:STRING=${CURRENT_INSTALLED_DIR}"
         OPTIONS_RELEASE
             ${_qarg_OPTIONS_RELEASE}
             -DINSTALL_DOCDIR:STRING=doc/${QT6_DIRECTORY_PREFIX}
@@ -205,6 +205,7 @@ function(qt_cmake_configure)
             QT_SYNCQT
             QT_NO_FORCE_SET_CMAKE_BUILD_TYPE
             QT_FORCE_WARN_APPLE_SDK_AND_XCODE_CHECK
+            QT_TOOLCHAIN_RELOCATABLE_INSTALL_PREFIX
             ${_qarg_OPTIONS_MAYBE_UNUSED}
             INPUT_bundled_xcb_xinput
             INPUT_freetype
@@ -327,9 +328,8 @@ function(qt_fixup_and_cleanup)
             endif()
         endforeach()
     endif()
-    file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/lib/cmake/"
+    file(REMOVE_RECURSE
                         "${CURRENT_PACKAGES_DIR}/debug/share"
-                        "${CURRENT_PACKAGES_DIR}/lib/cmake/"
                         "${CURRENT_PACKAGES_DIR}/debug/include"
                         )
 
@@ -343,6 +343,27 @@ function(qt_fixup_and_cleanup)
     endif()
 
     vcpkg_fixup_pkgconfig()
+
+    # Qt 6.11+ only installs *Tools cmake packages into the host triplet during cross-compilation.
+    # Copy any that were newly installed by this port into the target, and rewrite tool paths
+    # to point at the host install.
+    if(VCPKG_CROSSCOMPILING)
+        file(GLOB _tools_packages "${CURRENT_HOST_INSTALLED_DIR}/share/Qt6*Tools")
+        foreach(_tools_pkg IN LISTS _tools_packages)
+            get_filename_component(_pkg_name "${_tools_pkg}" NAME)
+            if(NOT EXISTS "${CURRENT_PACKAGES_DIR}/share/${_pkg_name}"
+               AND NOT EXISTS "${CURRENT_INSTALLED_DIR}/share/${_pkg_name}")
+                file(COPY "${_tools_pkg}" DESTINATION "${CURRENT_PACKAGES_DIR}/share/")
+                file(GLOB _cmake_files "${CURRENT_PACKAGES_DIR}/share/${_pkg_name}/*.cmake")
+                foreach(_cf IN LISTS _cmake_files)
+                    file(READ "${_cf}" _contents)
+                    file(RELATIVE_PATH _rel_host "${CURRENT_INSTALLED_DIR}" "${CURRENT_HOST_INSTALLED_DIR}")
+                    string(REPLACE "\${_IMPORT_PREFIX}/tools" "\${_IMPORT_PREFIX}/${_rel_host}/tools" _contents "${_contents}")
+                    file(WRITE "${_cf}" "${_contents}")
+                endforeach()
+            endif()
+        endforeach()
+    endif()
 endfunction()
 
 function(qt_install_submodule)

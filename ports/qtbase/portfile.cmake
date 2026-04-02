@@ -23,6 +23,9 @@ set(${PORT}_PATCHES
         fix_deploy_windows.patch
         fix-link-lib-discovery.patch
         macdeployqt-symlinks.patch
+        moltenvk.patch
+        fix-libresolv-test.patch
+        use_inotify_on_freebsd.patch
 )
  
 if(VCPKG_TARGET_IS_WINDOWS AND NOT VCPKG_TARGET_IS_MINGW)
@@ -58,10 +61,10 @@ endif()
 # (using QT_FEATURE_X overrides Qts condition check for the feature.)
 # Theoretically there is a feature for every widget to enable/disable it but that is way to much for vcpkg
 
-set(input_vars doubleconversion freetype harfbuzz libb2 jpeg libmd4c png sql-sqlite)
-set(INPUT_OPTIONS)
+set(input_vars doubleconversion freetype harfbuzz libb2 jpeg md4c png sql-sqlite)
+set(INPUT_OPTIONS "")
 foreach(_input IN LISTS input_vars)
-    if(_input MATCHES "(png|jpeg)" )
+    if(_input MATCHES "(png|jpeg|md4c)" )
         list(APPEND INPUT_OPTIONS -DINPUT_lib${_input}:STRING=)
     elseif(_input MATCHES "(sql-sqlite)") # Not yet used by the cmake build
     else()
@@ -71,8 +74,8 @@ foreach(_input IN LISTS input_vars)
         string(APPEND INPUT_OPTIONS system)
     elseif(_input STREQUAL "libb2" AND NOT VCPKG_TARGET_IS_WINDOWS)
         string(APPEND INPUT_OPTIONS system)
-    elseif(_input STREQUAL "libmd4c")
-        string(APPEND INPUT_OPTIONS qt) # libmd4c is not yet in VCPKG (but required by qtdeclarative)
+    elseif(_input STREQUAL "md4c") # required by qtdeclarative
+        string(APPEND INPUT_OPTIONS system)
     else()
         string(APPEND INPUT_OPTIONS no)
     endif()
@@ -138,6 +141,7 @@ list(APPEND FEATURE_CORE_OPTIONS -DCMAKE_DISABLE_FIND_PACKAGE_PPS:BOOL=ON)
 list(APPEND FEATURE_CORE_OPTIONS -DCMAKE_DISABLE_FIND_PACKAGE_Slog2:BOOL=ON)
 list(APPEND FEATURE_CORE_OPTIONS -DCMAKE_DISABLE_FIND_PACKAGE_Libsystemd:BOOL=ON)
 list(APPEND FEATURE_CORE_OPTIONS -DCMAKE_DISABLE_FIND_PACKAGE_WrapBacktrace:BOOL=ON)
+list(APPEND FEATURE_CORE_OPTIONS -DFEATURE_pkg_config:BOOL=ON)
 #list(APPEND FEATURE_CORE_OPTIONS -DCMAKE_DISABLE_FIND_PACKAGE_WrapAtomic:BOOL=ON) # Cannot be disabled on x64 platforms
 #list(APPEND FEATURE_CORE_OPTIONS -DCMAKE_DISABLE_FIND_PACKAGE_WrapRt:BOOL=ON) # Cannot be disabled on osx
 
@@ -178,9 +182,11 @@ vcpkg_check_features(OUT_FEATURE_OPTIONS FEATURE_GUI_OPTIONS
     "jpeg"                FEATURE_jpeg
     "png"                 FEATURE_png
     "opengl"              FEATURE_opengl
+    "sessionmanager"      FEATURE_sessionmanager
     "xlib"                FEATURE_xlib
     "xkb"                 FEATURE_xkbcommon
     "xcb"                 FEATURE_xcb
+    "xcb-sm"              FEATURE_xcb_sm
     "xcb-xlib"            FEATURE_xcb_xlib
     "xkbcommon-x11"       FEATURE_xkbcommon_x11
     "xrender"             FEATURE_xrender # requires FEATURE_xcb_native_painting; otherwise disabled. 
@@ -190,6 +196,7 @@ vcpkg_check_features(OUT_FEATURE_OPTIONS FEATURE_GUI_OPTIONS
     #Cannot be required since Qt will look in CONFIG mode first but is controlled via CMAKE_DISABLE_FIND_PACKAGE_Vulkan below
     #"vulkan"              CMAKE_REQUIRE_FIND_PACKAGE_WrapVulkanHeaders 
     "egl"                 FEATURE_egl
+    "wayland"             FEATURE_wayland
     #"fontconfig"          CMAKE_REQUIRE_FIND_PACKAGE_Fontconfig
     #"harfbuzz"            CMAKE_REQUIRE_FIND_PACKAGE_WrapSystemHarfbuzz
     #"jpeg"                CMAKE_REQUIRE_FIND_PACKAGE_JPEG
@@ -216,6 +223,7 @@ vcpkg_check_features(OUT_FEATURE_OPTIONS FEATURE_GUI_OPTIONS
     "xcb"                 CMAKE_DISABLE_FIND_PACKAGE_XCB
     "xcb-xlib"            CMAKE_DISABLE_FIND_PACKAGE_X11_XCB
     "xkbcommon-x11"       CMAKE_DISABLE_FIND_PACKAGE_XKB_COMMON_X11
+    "wayland"             CMAKE_DISABLE_FIND_PACKAGE_Wayland
     "xrender"             CMAKE_DISABLE_FIND_PACKAGE_XRender
     # There are more X features but I am unsure how to safely disable them! Most of them seem to be found automaticall with find_package(X11)
      )
@@ -315,6 +323,9 @@ set(TOOL_NAMES
         androiddeployqt6
         syncqt
         tracepointgen
+        qtwaylandscanner
+        wasmdeployqt
+        wasmdeployqt6
     )
 
 qt_install_submodule(PATCHES    ${${PORT}_PATCHES}
@@ -380,6 +391,7 @@ list(APPEND other_files
                 ensure_pro_file.cmake
                 qt-android-runner.py
                 qt-cmake-private-install.cmake
+                qt_cyclonedx_generator.py
                 qt-testrunner.py
                 qt-wasmtestrunner.py
                 sanitizer-testrunner.py

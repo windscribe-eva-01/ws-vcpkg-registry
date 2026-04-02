@@ -1,7 +1,6 @@
 {
   "name": "qtbase",
-  "version": "6.8.3",
-  "port-version": 5,
+  "version": "6.11.0",
   "description": "Qt Base (Core, Gui, Widgets, Network, ...)",
   "homepage": "https://www.qt.io/",
   "license": null,
@@ -24,22 +23,38 @@
   "default-features": [
     "gui",
     "network",
+    "opengl",
     "widgets",
     "png"
   ],
 
   "features": {
+    "concurrent": {
+      "description": "Qt Concurrent"
+    },
+    "dbus": {
+      "description": "Qt D-Bus"
+    },
     "gui": {
       "description": "Qt Gui"
     },
     "network": {
       "description": "Qt Network"
     },
-    "widgets": {
-      "description": "Qt Widgets"
+    "opengl": {
+      "description": "OpenGL support"
     },
     "png": {
       "description": "Enable PNG"
+    },
+    "testlib": {
+      "description": "Qt Test"
+    },
+    "wayland": {
+      "description": "Wayland platform support"
+    },
+    "widgets": {
+      "description": "Qt Widgets"
     }
   }
 }
