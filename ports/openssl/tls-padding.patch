@@ -1,18 +1,18 @@
 diff --git a/include/openssl/ssl.h.in b/include/openssl/ssl.h.in
-index c5dba691ae..d76c5ff3ca 100644
+index 95640d1..2a569f7 100644
 --- a/include/openssl/ssl.h.in
 +++ b/include/openssl/ssl.h.in
-@@ -456,6 +456,8 @@ typedef int (*SSL_async_callback_fn)(SSL *s, void *arg);
- # define SSL_OP_ECH_GREASE_RETRY_CONFIG                  SSL_OP_BIT(40)
+@@ -453,6 +453,8 @@ typedef int (*SSL_async_callback_fn)(SSL *s, void *arg);
+ #define SSL_OP_ECH_GREASE_RETRY_CONFIG SSL_OP_BIT(40)
  #endif
  
-+# define SSL_OP_TLSEXT_PADDING_SUPER                     SSL_OP_BIT(41)
++#define SSL_OP_TLSEXT_PADDING_SUPER SSL_OP_BIT(41)
 +
  /*
   * Option "collections."
   */
 diff --git a/ssl/statem/extensions_clnt.c b/ssl/statem/extensions_clnt.c
-index 590e86ada6..d6c73ce5cf 100644
+index 7cdb594..8043cdd 100644
 --- a/ssl/statem/extensions_clnt.c
 +++ b/ssl/statem/extensions_clnt.c
 @@ -8,6 +8,7 @@
@@ -23,7 +23,7 @@ index 590e86ada6..d6c73ce5cf 100644
  #include "../ssl_local.h"
  #include "internal/cryptlib.h"
  #include "internal/ssl_unwrap.h"
-@@ -101,6 +102,48 @@ EXT_RETURN tls_construct_ctos_server_name(SSL_CONNECTION *s, WPACKET *pkt,
+@@ -108,6 +109,48 @@ EXT_RETURN tls_construct_ctos_server_name(SSL_CONNECTION *s, WPACKET *pkt,
  #endif
      if (chosen == NULL)
          return EXT_RETURN_NOT_SENT;
@@ -72,7 +72,7 @@ index 590e86ada6..d6c73ce5cf 100644
      /* Add TLS extension servername to the Client Hello message */
      if (!WPACKET_put_bytes_u16(pkt, TLSEXT_TYPE_server_name)
          /* Sub-packet for server_name extension */
-@@ -1135,6 +1178,9 @@ EXT_RETURN tls_construct_ctos_padding(SSL_CONNECTION *s, WPACKET *pkt,
+@@ -1185,6 +1228,9 @@ EXT_RETURN tls_construct_ctos_padding(SSL_CONNECTION *s, WPACKET *pkt,
      unsigned char *padbytes;
      size_t hlen;
  

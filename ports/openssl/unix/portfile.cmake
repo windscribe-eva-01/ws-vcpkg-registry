@@ -111,7 +111,6 @@ elseif(VCPKG_TARGET_IS_MINGW)
 elseif(VCPKG_TARGET_IS_EMSCRIPTEN)
     set(OPENSSL_ARCH linux-x32)
     vcpkg_list(APPEND CONFIGURE_OPTIONS
-        no-engine
         no-asm
         no-sse2
         no-srtp
@@ -150,18 +149,16 @@ vcpkg_install_make(
 )
 vcpkg_fixup_pkgconfig()
 
-# For MacOS, ensure that libssl.3.dylib references $ORIGIN/libcrypto.3.dylib rather than an absolute path
+# For MacOS, ensure that libssl.4.dylib references $ORIGIN/libcrypto.4.dylib rather than an absolute path
 if(VCPKG_TARGET_IS_OSX)
    vcpkg_execute_build_process(
-      COMMAND install_name_tool -change "${CURRENT_INSTALLED_DIR}/lib/libcrypto.3.dylib" "@rpath/libcrypto.3.dylib" "${CURRENT_PACKAGES_DIR}/lib/libssl.3.dylib"
+      COMMAND install_name_tool -change "${CURRENT_INSTALLED_DIR}/lib/libcrypto.4.dylib" "@rpath/libcrypto.4.dylib" "${CURRENT_PACKAGES_DIR}/lib/libssl.4.dylib"
       WORKING_DIRECTORY "${CURRENT_PACKAGES_DIR}"
    )
 endif()
 
 if("tools" IN_LIST FEATURES)
     file(MAKE_DIRECTORY "${CURRENT_PACKAGES_DIR}/tools/${PORT}")
-    file(RENAME "${CURRENT_PACKAGES_DIR}/bin/c_rehash" "${CURRENT_PACKAGES_DIR}/tools/${PORT}/c_rehash")
-    file(REMOVE "${CURRENT_PACKAGES_DIR}/debug/bin/c_rehash")
     vcpkg_copy_tools(TOOL_NAMES openssl AUTO_CLEAN)
 elseif(VCPKG_LIBRARY_LINKAGE STREQUAL "static" OR NOT VCPKG_TARGET_IS_WINDOWS)
     file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/bin" "${CURRENT_PACKAGES_DIR}/debug/bin")
@@ -176,15 +173,3 @@ file(REMOVE_RECURSE
     "${CURRENT_PACKAGES_DIR}/debug/include"
     "${CURRENT_PACKAGES_DIR}/debug/share"
 )
-
-# For consistency of mingw build with nmake build
-file(GLOB engines "${CURRENT_PACKAGES_DIR}/lib/ossl-modules/*.dll")
-if(NOT engines STREQUAL "")
-    file(COPY ${engines} DESTINATION "${CURRENT_PACKAGES_DIR}/bin")
-    file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/lib/ossl-modules")
-endif()
-file(GLOB engines "${CURRENT_PACKAGES_DIR}/debug/lib/ossl-modules/*.dll")
-if(NOT engines STREQUAL "")
-    file(COPY ${engines} DESTINATION "${CURRENT_PACKAGES_DIR}/debug/bin")
-    file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/lib/ossl-modules")
-endif()
