@@ -48,6 +48,12 @@ if(VCPKG_TARGET_IS_ANDROID)
     if(VCPKG_DETECTED_CMAKE_ANDROID_ARCH STREQUAL "arm" AND NOT VCPKG_DETECTED_CMAKE_ANDROID_ARM_NEON)
         vcpkg_list(APPEND CONFIGURE_OPTIONS no-asm)
     endif()
+    # Windscribe: OpenSSL 4.0 SVE2 assembly (poly1305-armv9-sve2.S) uses non-PIC
+    # relocations that fail when the static lib is linked into a shared library.
+    # Disable asm for aarch64 Android; SVE2 isn't available on Android devices.
+    if(VCPKG_DETECTED_CMAKE_ANDROID_ARCH STREQUAL "arm64")
+        vcpkg_list(APPEND CONFIGURE_OPTIONS no-asm)
+    endif()
 elseif(VCPKG_TARGET_IS_LINUX)
     if(VCPKG_TARGET_ARCHITECTURE MATCHES "arm64")
         set(OPENSSL_ARCH linux-aarch64)
